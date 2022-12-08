@@ -21,8 +21,9 @@ execute:
 
 - Associate Director, Statistics & Data Science at Pharmalex: support pharmaceutical companies in drug development
 - Gravitated towards blockchain technology and the place of data science within it
-- Lots of data available on the blockchain^[~ 1x10^6 transaction per day on ethereum] but how to access it? 
+- Lots of data available on the blockchain (~ 1x10^6 transaction per day on ethereum), how to access it? 
 - Obtaining cryptocurrencies price data is straightforward, more sophisticated data manipulations require access to the “source” data
+- Github: https://github.com/tdemarchin
 - Blog: https://tdemarchin.medium.com/
 
 
@@ -63,7 +64,8 @@ Two examples implemented in R:
 ![](figures/cryptopunks.jpg){height=200px fig-align="center"}
 
 - Non-Fungible Tokens: represent ownership of unique items (art, collectibles, patents, real estate,...) 
-- Smart contracts: programs stored on a blockchain that run when predetermined conditions are met
+- Smart contracts: decentralized programs stored on a blockchain that run when predetermined conditions are met
+- What can we do with NFT-related data ?
 
 ## NFTs price analysis with OpenSea API
 
@@ -84,10 +86,10 @@ resOpenSea <- GET("https://api.opensea.io/api/v1/events",
 
 :::
 
-- 300 transactions max 
-- pre-processed by OpenSea and not the blockchain itself
-- limited to OpenSea transactions
-- mainly price analysis 
+- 300 transactions max, limited to OpenSea transactions
+- pre-processed by OpenSea and not raw blockchain transactions
+- mainly price analysis
+- Analysis done in June 2021: [Link](https://medium.com/towards-data-science/data-science-on-blockchain-with-r-afaf09f7578c)
 
 ## NFTs tracking with EtherScan API: the transfers
 
@@ -97,15 +99,16 @@ resOpenSea <- GET("https://api.opensea.io/api/v1/events",
 
 ![](figures/patchwork.png){height=300px fig-align="center"}
 
-Weird Whales: collection of 3350 whales programmatically generated, each with their unique characteristics and traits. Created by a 12-year-old programmer named Benyamin Ahmed who made the buzz. 
+- Weird Whales: collection of 3350 whales programmatically generated, each with their unique characteristics and traits. Created by a 12-year-old programmer named Benyamin Ahmed who made the buzz. 
+- EtherScan: block explorer to view information about transactions, verify contract code, visualize network data $\rightarrow$ access to *more raw* data
+- Analysis done in October 2021 and updated in December 2022: [Link](https://tdemarchin.github.io/DataScienceOnBlockchainWithR-PartII//DataScienceOnBlockchainWithR-PartII.html)
 
-EtherScan: block explorer to view information about transactions, verify contract code, visualize network data -> access to *more raw* data
 
 ### Events: Reverse engineering
 
 - Weird Whales are managed by a specific smart contract on the Ethereum blockchain
 
-- To make it easier to extract information from the blockchain, we can read the events: dispatched signals the smart contracts can fire. 
+- To make it easier to extract information from the blockchain, we can read the events: dispatched signals (easy to read) the smart contracts can fire. 
 
 ![](figures/transferEvent.png)
 
@@ -124,46 +127,67 @@ resEventTransfer <- GET("https://api.etherscan.io/api",
 
 ![](figures/glimpseWeirdWhales.png){fig-align="center"}
 
-Wait... Where is the sales price? On OpenSea, sales are managed by the main contract and if approved, the second contract is called (here Weird Whales), which then triggers the transfer. Need to download all the transactions from the OpenSea main smart contract address and then filter for the ones related to Weird Whales (~ 10000 API calls, can take several hours...). 
+Where is the sales price? On OpenSea, sales are managed by the main contract and if approved, the second contract is called (here Weird Whales), which then triggers the transfer $\rightarrow$ need to download all the transactions from the OpenSea main smart contract address and then filter for the ones related to Weird Whales (~ 10000 API calls, can take several hours...). 
 
 ### ETH/USD conversion
 
-Ethereum / USD rate is highly volatile, need to download the historical ETH USD price if we want to convert ETH to USD:
-
 ![](figures/ETHUSD.png){fig-align="center"}
+
+- Ethereum / USD rate is highly volatile, need to obtain the historical ETH market price if we want to convert ETH to USD.
+- A spline is fitted on data from the CoinGecko API 
 
 ### Final dataset
 
 ![](figures/glimpseWeirdWhales2.png){fig-align="center"}
 
-### Descriptive statistics
-
-
-
 :::
 
-## NFTs tracking with EtherScan API: visualisation
+## NFTs tracking with EtherScan API: analysis and visualisation
 
 ::: {.panel-tabset}
 
-### Price evolution
+### Descriptive statistics
+
+![](figures/descriptiveStatWeirdWhales.png){fig-align="center"}
+
+### Sales price evolution
+
+![](figures/salesPriceEvolution.png){height=400px fig-align="center"}
+
+- High variability in prices at the begining (buzz), followed by a quieter period.
+- Starting March 2022, all sales price felt to 0 $\rightarrow$ OpenSea was hacked in March, they probably updated their smart contract... 
 
 ### Static network
 
-Networks are described by vertices (or nodes) and edges (or links). Here we are going to use a node representation for a wallet address. The network we are going to construct will display all the wallet addresses that have ever traded Weird Whales. The connections between the vertices, so called edges, will represent the transactions.
+::: {layout="[[50, 50]]" layout-valign="center"}
 
-*network* and *ggraph* packages
+![](figures/staticNetwork.png){height=400px fig-align="center"}
+
+- Networks are described by:
+
+  - vertices (or nodes): the wallet addresses
+  - edges (or links): the transactions
+
+- Each color represents a unique token ID
+- Made with the *network* and *ggraph* packages
+
+:::
+
+### Longitudinal dimension
+
+![](figures/timeline.png){height=400px fig-align="center"}
+
+About 2/3 of the transactions happened very shortly after the NFT’s creation
 
 ### Dynamic network
 
 ![](figures/dynamicNetwork.mp4){height=400px fig-align="center"}
 
-
-*network* and *networkDynamic* packages
+- Made with the *network* and *networkDynamic* packages
 
 :::
 
-# Helium 
+# Helium IoT network
 
 ::: {layout="[[50, 50]]" layout-valign="center"}
 
@@ -173,13 +197,14 @@ Networks are described by vertices (or nodes) and edges (or links). Here we are 
 
 :::
 
-![](figures/miner.png){fig-align="center"}
+![](figures/miner.png){height=100px fig-align="center"}
 
 Helium is a decentralized wireless infrastructure for IoT devices (environmental sensors, localisation sensors to track bike fleets,...). It is a blockchain that leverages a decentralized global network of Hotspots. People are incentivized to install hotspots and become a part of the network by earning Helium tokens, which can be bought and sold like any other cryptocurrency.
 
 - How big is the Helium network?
 - Where are located the hotspots?
 - Are they actively utilized, i.e. are they used to transfer data with connected devices?
+
 
 
 ## References{.unnumbered .unlisted}
