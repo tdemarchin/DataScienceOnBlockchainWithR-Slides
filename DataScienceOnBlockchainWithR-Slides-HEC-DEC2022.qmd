@@ -124,7 +124,7 @@ resEventTransfer <- GET("https://api.etherscan.io/api",
 
 ![](figures/glimpseWeirdWhales.png){fig-align="center"}
 
-Wait... Where is the sales price? On OpenSea, sales are managed by the main contract and if approved, the second contract is called (here Weird Whales), which then triggers the transfer. Need to download all the transactions from the OpenSea main smart contract address and then filter for the ones related to Weird Whales (can take several hours...). 
+Wait... Where is the sales price? On OpenSea, sales are managed by the main contract and if approved, the second contract is called (here Weird Whales), which then triggers the transfer. Need to download all the transactions from the OpenSea main smart contract address and then filter for the ones related to Weird Whales (~ 10000 API calls, can take several hours...). 
 
 ### ETH/USD conversion
 
@@ -155,6 +155,9 @@ Networks are described by vertices (or nodes) and edges (or links). Here we are 
 *network* and *ggraph* packages
 
 ### Dynamic network
+
+![](figures/dynamicNetwork.mp4){height=400px fig-align="center"}
+
 
 *network* and *networkDynamic* packages
 
