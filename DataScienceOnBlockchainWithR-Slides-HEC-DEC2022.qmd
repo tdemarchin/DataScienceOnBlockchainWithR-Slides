@@ -1,0 +1,185 @@
+---
+title: "Data Science on Blockchain, how to get started?"
+subtitle: "Two analysis examples on NFT and Helium"
+author: "Thomas de Marchin"
+date: "14DEC2022"
+format:
+  revealjs: 
+    theme: white
+    slide-number: true
+    embed-resources: true
+    auto-stretch: false
+    smaller: true
+    center: true
+    toc: false
+execute: 
+  eval: false
+  echo: true
+---
+
+# Introduction
+
+- Associate Director, Statistics & Data Science at Pharmalex: support pharmaceutical companies in drug development
+- Gravitated towards blockchain technology and the place of data science within it
+- Lots of data available on the blockchain^[~ 1x10^6 transaction per day on ethereum] but how to access it? 
+- Obtaining cryptocurrencies price data is straightforward, more sophisticated data manipulations require access to the “source” data
+- Blog: https://tdemarchin.medium.com/
+
+
+## Blockchain is accessible but hard to read
+
+1.  Several Tb of data
+
+2.  Data are stored sequentially, requires developing specific tools to follow a transaction.
+
+3.  The structure of a transaction is difficult to read
+
+4.  Fragmentation of blockchain technologies
+
+::: {layout="[[20,30, 50]]" layout-valign="center"}
+
+![](figures/ramac.jpg)
+
+![](figures/blocks.png)
+
+![](figures/transactionStructure.png)
+
+:::
+
+## How to get the data ?
+
+1. Set-up an ETL: Extract, Transform and Load. Most flexible but need to set up a server with huge and fast hard-drives.
+2. Use data providers:
+  - Dashboards: Dune analytics, Nansen, GraphSense, icy.tools,...
+  - APIs (software intermediary that allows two applications to talk to each other): OpenSea, Etherscan, Infura, The Graph,...
+  
+Two examples implemented in R:
+
+  1. How to track and visualize NFTs: OpenSea and EtherScan APIs 
+  2. Blockchain IoT data visualization and the rise of the Helium network: full data dump from The Helium Foundation ETL
+
+# NFTs
+
+![](figures/cryptopunks.jpg){height=200px fig-align="center"}
+
+- Non-Fungible Tokens: represent ownership of unique items (art, collectibles, patents, real estate,...) 
+- Smart contracts: programs stored on a blockchain that run when predetermined conditions are met
+
+## NFTs price analysis with OpenSea API
+
+OpenSea: big NFT market place
+
+```{r}
+resOpenSea <- GET("https://api.opensea.io/api/v1/events",
+          query = list(limit = 300, 
+                       event_type = "successful", 
+                       only_opensea = "true")) 
+```
+
+::: {layout="[[50, 50]]" layout-valign="center"}
+
+![](figures/glimpse.png){height=200px}
+
+![](figures/pieChartOpenSea.png){height=200px}
+
+:::
+
+- 300 transactions max 
+- pre-processed by OpenSea and not the blockchain itself
+- limited to OpenSea transactions
+- mainly price analysis 
+
+## NFTs tracking with EtherScan API: the transfers
+
+::: {.panel-tabset}
+
+### The Weird Whales
+
+![](figures/patchwork.png){height=300px fig-align="center"}
+
+Weird Whales: collection of 3350 whales programmatically generated, each with their unique characteristics and traits. Created by a 12-year-old programmer named Benyamin Ahmed who made the buzz. 
+
+EtherScan: block explorer to view information about transactions, verify contract code, visualize network data -> access to *more raw* data
+
+### Events: Reverse engineering
+
+- Weird Whales are managed by a specific smart contract on the Ethereum blockchain
+
+- To make it easier to extract information from the blockchain, we can read the events: dispatched signals the smart contracts can fire. 
+
+![](figures/transferEvent.png)
+
+### Transfer & Sales price
+
+```{r}
+resEventTransfer <- GET("https://api.etherscan.io/api",
+                          query = list(module = "logs", 
+                                       action = "getLogs", 
+                                       fromBlock = fromBlock, 
+                                       toBlock = "latest",
+                                       address = "0x96ed81c7f4406eff359e27bff6325dc3c9e042bd", 
+                                       topic0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                                       apikey = EtherScanAPIToken)) 
+```
+
+![](figures/glimpseWeirdWhales.png){fig-align="center"}
+
+Wait... Where is the sales price? On OpenSea, sales are managed by the main contract and if approved, the second contract is called (here Weird Whales), which then triggers the transfer. Need to download all the transactions from the OpenSea main smart contract address and then filter for the ones related to Weird Whales (can take several hours...). 
+
+### ETH/USD conversion
+
+Ethereum / USD rate is highly volatile, need to download the historical ETH USD price if we want to convert ETH to USD:
+
+![](figures/ETHUSD.png){fig-align="center"}
+
+### Final dataset
+
+![](figures/glimpseWeirdWhales2.png){fig-align="center"}
+
+### Descriptive statistics
+
+
+
+:::
+
+## NFTs tracking with EtherScan API: visualisation
+
+::: {.panel-tabset}
+
+### Price evolution
+
+### Static network
+
+Networks are described by vertices (or nodes) and edges (or links). Here we are going to use a node representation for a wallet address. The network we are going to construct will display all the wallet addresses that have ever traded Weird Whales. The connections between the vertices, so called edges, will represent the transactions.
+
+*network* and *ggraph* packages
+
+### Dynamic network
+
+*network* and *networkDynamic* packages
+
+:::
+
+# Helium 
+
+::: {layout="[[50, 50]]" layout-valign="center"}
+
+![](figures/helium.png){height=200px fig-align="center"}
+
+![](figures/helium2.png){height=200px fig-align="center"}
+
+:::
+
+![](figures/miner.png){fig-align="center"}
+
+Helium is a decentralized wireless infrastructure for IoT devices (environmental sensors, localisation sensors to track bike fleets,...). It is a blockchain that leverages a decentralized global network of Hotspots. People are incentivized to install hotspots and become a part of the network by earning Helium tokens, which can be bought and sold like any other cryptocurrency.
+
+- How big is the Helium network?
+- Where are located the hotspots?
+- Are they actively utilized, i.e. are they used to transfer data with connected devices?
+
+
+## References{.unnumbered .unlisted}
+
+- https://weirdwhalesnft.com/
+- Ig.com
