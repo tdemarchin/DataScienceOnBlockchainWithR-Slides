@@ -10,8 +10,8 @@ format:
     embed-resources: true
     auto-stretch: false
     smaller: true
-    center: true
-    toc: false
+    toc: true
+    css: styles.css
 execute: 
   eval: false
   echo: true
@@ -29,7 +29,7 @@ execute:
 
 ## Blockchain is accessible but hard to read
 
-1.  Several Tb of data
+1.  Several Tb of data. Ethereum ~ 6x10^9 transactions.
 
 2.  Data are stored sequentially, requires developing specific tools to follow a transaction.
 
@@ -37,13 +37,13 @@ execute:
 
 4.  Fragmentation of blockchain technologies
 
-::: {layout="[[20,30, 50]]" layout-valign="center"}
+::: {layout="[[20,40, 40]]" layout-valign="center"}
 
-![](figures/ramac.jpg)
+![A huge hard drive](figures/ramac.jpg)
 
-![](figures/blocks.png)
+![Image from ig.com](figures/blocks.png)
 
-![](figures/transactionStructure.png)
+![Structure of a transaction](figures/transactionStructure.png)
 
 :::
 
@@ -54,9 +54,9 @@ execute:
   - Dashboards: Dune analytics, Nansen, GraphSense, icy.tools,...
   - APIs (software intermediary that allows two applications to talk to each other): OpenSea, Etherscan, Infura, The Graph,...
   
-Two examples implemented in R:
+Two examples implemented in R (lots of visualisation packages):
 
-  1. How to track and visualize NFTs: OpenSea and EtherScan APIs 
+  1. How to track and visualize NFT transactions: OpenSea and EtherScan APIs 
   2. Blockchain IoT data visualization and the rise of the Helium network: full data dump from The Helium Foundation ETL
 
 # NFTs
@@ -78,26 +78,26 @@ resOpenSea <- GET("https://api.opensea.io/api/v1/events",
                        only_opensea = "true")) 
 ```
 
-::: {layout="[[50, 50]]" layout-valign="center"}
+:::: {layout="[[60, 40]]" layout-valign="center"}
 
-![](figures/glimpse.png){height=200px}
+![](figures/glimpse.png)
 
 ![](figures/pieChartOpenSea.png){height=200px}
 
-:::
+::::
 
 - 300 transactions max, limited to OpenSea transactions
-- pre-processed by OpenSea and not raw blockchain transactions
-- mainly price analysis
+- Pre-processed by OpenSea and not raw blockchain transactions
+- Mainly price analysis
 - Analysis done in June 2021: [Link](https://medium.com/towards-data-science/data-science-on-blockchain-with-r-afaf09f7578c)
 
-## NFTs tracking with EtherScan API: the transfers
+## NFTs tracking with EtherScan API: the data
 
 ::: {.panel-tabset}
 
 ### The Weird Whales
 
-![](figures/patchwork.png){height=300px fig-align="center"}
+![https://weirdwhalesnft.com/](figures/patchwork.png){height=300px fig-align="center"}
 
 - Weird Whales: collection of 3350 whales programmatically generated, each with their unique characteristics and traits. Created by a 12-year-old programmer named Benyamin Ahmed who made the buzz. 
 - EtherScan: block explorer to view information about transactions, verify contract code, visualize network data $\rightarrow$ access to *more raw* data
@@ -106,13 +106,27 @@ resOpenSea <- GET("https://api.opensea.io/api/v1/events",
 
 ### Events: Reverse engineering
 
+:::: {.columns}
+
+::: {.column width="60%"}
+
 - Weird Whales are managed by a specific smart contract on the Ethereum blockchain
 
 - To make it easier to extract information from the blockchain, we can read the events: dispatched signals (easy to read) the smart contracts can fire. 
 
 ![](figures/transferEvent.png)
 
-### Transfer & Sales price
+:::
+
+::: {.column width="40%"}
+
+![](figures/smartContractWeirdWhales.png)
+
+:::
+
+::::
+
+### Transfer and sales price
 
 ```{r}
 resEventTransfer <- GET("https://api.etherscan.io/api",
@@ -125,20 +139,20 @@ resEventTransfer <- GET("https://api.etherscan.io/api",
                                        apikey = EtherScanAPIToken)) 
 ```
 
-![](figures/glimpseWeirdWhales.png){fig-align="center"}
+![](figures/glimpseWeirdWhales.png){height="150px" fig-align="center"}
 
 Where is the sales price? On OpenSea, sales are managed by the main contract and if approved, the second contract is called (here Weird Whales), which then triggers the transfer $\rightarrow$ need to download all the transactions from the OpenSea main smart contract address and then filter for the ones related to Weird Whales (~ 10000 API calls, can take several hours...). 
 
 ### ETH/USD conversion
 
-![](figures/ETHUSD.png){fig-align="center"}
+![](figures/ETHUSD.png){height="400px" fig-align="center"}
 
 - Ethereum / USD rate is highly volatile, need to obtain the historical ETH market price if we want to convert ETH to USD.
 - A spline is fitted on data from the CoinGecko API 
 
 ### Final dataset
 
-![](figures/glimpseWeirdWhales2.png){fig-align="center"}
+![](figures/glimpseWeirdWhales2.png){height="300px" fig-align="center"}
 
 :::
 
@@ -152,26 +166,46 @@ Where is the sales price? On OpenSea, sales are managed by the main contract and
 
 ### Sales price evolution
 
-![](figures/salesPriceEvolution.png){height=400px fig-align="center"}
+![](figures/salesPriceEvolution.png){height=350px fig-align="center"}
 
 - High variability in prices at the begining (buzz), followed by a quieter period.
+- Some NFTs are exchanged outside the OpenSea Market (price = 0) $\rightarrow$ difficult to trace....
 - Starting March 2022, all sales price felt to 0 $\rightarrow$ OpenSea was hacked in March, they probably updated their smart contract... 
 
-### Static network
+### Network
 
-::: {layout="[[50, 50]]" layout-valign="center"}
-
-![](figures/staticNetwork.png){height=400px fig-align="center"}
+- Perfect data to be plotted as a network. We will display all the wallet addresses that have ever traded Weird Whales (restricted to tokens involved in at least 10 transactions).
 
 - Networks are described by:
 
-  - vertices (or nodes): the wallet addresses
-  - edges (or links): the transactions
+  - Vertices (or nodes): the wallet addresses
+  - Edges (or links): the transactions
+
+- *network* package:
+
+```{r}
+# create the network using network function
+network <- network(edges,  
+                   vertex.attr = vertices, 
+                   matrix.type = "edgelist", 
+                   loops = T, 
+                   multiple = T, 
+                   ignore.eval = F)
+```
+
+### Static network
+
+:::: {layout="[[50, 50]]" layout-valign="center"}
+
+![](figures/staticNetwork.png){height=400px fig-align="center"}
 
 - Each color represents a unique token ID
-- Made with the *network* and *ggraph* packages
+- All transactions of all the tokens originate from the single minting address (1)
+- Some addresses are involved in multiple transactions (curved edges)
+- Some tokens were transferred to an address only to be sent back to the sender...? 
+- Made with the *ggraph* packages
 
-:::
+::::
 
 ### Longitudinal dimension
 
@@ -187,27 +221,128 @@ About 2/3 of the transactions happened very shortly after the NFT’s creation
 
 :::
 
-# Helium IoT network
+# Helium IoT network 
 
-::: {layout="[[50, 50]]" layout-valign="center"}
+:::: {layout="[[-5, 40, -5, 20, -5, 20, -5]]" layout-valign="center"}
 
-![](figures/helium.png){height=200px fig-align="center"}
+![Helium, the people’s network. Photo from Nima Mot.](figures/peopleNetwork.jpg)
 
-![](figures/helium2.png){height=200px fig-align="center"}
+![A miner](figures/miner.png)
+
+![Rewards](figures/rewardsHelium.png)
+
+::::
+
+- Helium: decentralized wireless infrastructure for IoT devices (environmental sensors, localisation sensors to track bike fleets,...), blockchain that leverages a decentralized global network of Hotspots
+- People are incentivized to install hotspots and become a part of the network by earning Helium tokens 
+- Lot of content available about the coverage aspect of Helium, but what about the real use ? :
+  - How big is the Helium network, where are located the hotspots?
+  - Are they actively utilized, i.e. are they used to transfer data with connected devices?
+- Analysis done in March 2022: [Link](https://tdemarchin.github.io/DataScienceOnBlockchainWithR-PartIII/DataScienceOnBlockchainWithR-PartIII.html)
+- Dewi ETL project: dedicated ETL server up and running. Interface (metabase) available to download extracts but limited to 10^6 rows. Fortunately, the team put CSV extracts in 10k/50k-block increments on a server: centralized, bad practice!
+
+## Helium IoT network: hotspot data
+
+::: {.panel-tabset}
+
+### Geospatial indexing 
+
+:::: {layout="[[50, 50]]" layout-valign="center"}
+
+![Liege](figures/helium2.png)
+
+![](figures/glimpseHelium1.png)
+![](figures/descriptiveStatHelium1.png)
+
+::::
+
+- H3: geospatial indexing system using a hierarchical hexagonal grid.  At resolution 8:  earth is covered by 691,776,122 hexagons $\rightarrow$ we convert to lat/lng
+
+### Growth and distribution
+
+:::: {.columns aligm-items="center"}
+
+::: {.column width="60%"}
+
+![](figures/hotspotDistribution.png){}
+
+- Some owners own more than 50 hotspots!
+- Three phases: (1) a slow linear increase, (2) an exponential increase in the middle of 2021 followed by (3) a fast linear increase (did it continue?)
 
 :::
 
-![](figures/miner.png){height=100px fig-align="center"}
+::: {.column width="40%"}
 
-Helium is a decentralized wireless infrastructure for IoT devices (environmental sensors, localisation sensors to track bike fleets,...). It is a blockchain that leverages a decentralized global network of Hotspots. People are incentivized to install hotspots and become a part of the network by earning Helium tokens, which can be bought and sold like any other cryptocurrency.
+![Cumulative growth of the network infrastructure in terms of number of hotspots added](figures/growthHotspotHelium.png){}
+:::
 
-- How big is the Helium network?
-- Where are located the hotspots?
-- Are they actively utilized, i.e. are they used to transfer data with connected devices?
+::::
+
+### Localization
+
+![](figures/hotspotLocalizationHelium.png){height=400px fig-align="center"}
+
+- We start by creating an empty world map on which we overlay the hotspot data. 
+- Plotting all the individual hotspots on a map would be too much (> 500k hotspots) $\rightarrow$ we cluster the hotspots into hexagons (*hexbin* and *geom_hex*)
+- Most hotspots are located in North America, Europe and Asia, mostly in big cities. Practically no hotspots in Africa, Russia and very few in South America. A few hotspots in the middle of the ocean... Data issue or cheating to increase rewards? 
+
+:::
+
+## Helium IoT network: network usage
+
+::: {.panel-tabset}
+
+### Data transactions
+
+- We understood that hotspots are distributed on the planet and provide good coverage in big cities. Are they being actively used by connected devices and how often? $\rightarrow$ Transaction data
+- Every 24 bytes sent cost 1 Data Credit (DC) = $0.00001
+- We can look at network usage from two perspectives: (1) check the volume of data exchanged and (2) check how often the hotspots have been involved in data transfer with connected devices
+
+![](figures/glimpseHelium2.png){fig-align="center"}
 
 
+### Growth
 
-## References{.unnumbered .unlisted}
+:::: {layout="[[60, 40]]" layout-valign="center"}
 
-- https://weirdwhalesnft.com/
-- Ig.com
+![Total volume of data exchanged](figures/descriptiveStatHelium2.png)
+
+![Cumulative sum of the number of transactions](figures/growthTransactionsHelium.png)
+::::
+
+- Slow linear increase followed by an exponential increase, which is finally followed by a fast linear increase
+- Glitch in November 2021: major outage of the blockchain
+- Despite having about 15% of the hotspots, Asia don’t seem to be so active in terms of data transfer
+- Median number of transactions per hotspot: 42 
+- 40.48% hotspots did not participate in any transaction so far.
+
+### Dynamic plot
+
+![Evolution of the number of transactions across the globe](figures/dynamicGrowthHelium.gif){height=400px fig-align="center"}
+
+- Transactions mainly occur in North America before mid 2020, then followed by a strong wave in Europe and Asia. Barely no transaction have occurred in South America and Africa.
+- Made with the *gganimate* package
+
+### 3D plot
+
+:::: {layout="[[50, 50]]" layout-valign="center"}
+
+![Distribution of the transactions in the US](figures/distributionTransactionsUS.webp)
+
+![Distribution of the transactions in Belgium](figures/distributionTransactionsBE.webp)
+::::
+
+- US: Transactions are homogeneously distributed across the country although the peaks of activity (note that the legend is logarithmic!) are located around big cities (New York, Los Angeles, San Francisco, Miami)
+- BE: Transactions are not homogeneously distributed across the country $\rightarrow$ most transactions happen in the upper part of the country, which is consistent with the lower part of the country being scarcely populated (Ardennes)
+- Made with the *rayshader* package, interactive version available in the original article
+
+:::
+
+# Conclusion
+
+- Blockchain: approaches for reading the blockchains and on how to visualize the blockchain transactions 
+- NFT: We have shown an example of how to download and plot a network of transactions associated to NFTs. Analysing and plotting transactions is easy once you have the data. On the other hand, obtaining data in an appropriate format requires a deep understanding of the blockchain, especially when working with smart contracts.
+- Helium: We have shown some techniques on how to summarise and visualise a network growth in term of infrastructure (hotspots) and data usage (transactions). We have analysed spatio-temporal data and have plotted them using dedicated R packages.
+
+Next step: analyse the networks using the graph theory
+
